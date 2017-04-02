@@ -91,7 +91,7 @@ func performRequest(hub *IoTHub, method string, url string, data string) (string
 	// read the entire reply to ensure connection re-use
 	text, _ := ioutil.ReadAll(resp.Body)
 	io.Copy(ioutil.Discard, resp.Body)
-	resp.Body.Close()
+	defer resp.Body.Close()
 	return string(text), resp.Status
 }
 
