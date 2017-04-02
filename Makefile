@@ -2,6 +2,9 @@ export GOOS?=linux
 export GOARCH?=amd64
 export BINARY?=client
 
+run:
+	go run iothub.go
+
 build:
 	go build -o $(BINARY)
 

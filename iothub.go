@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -86,10 +87,11 @@ func performRequest(hub *IoTHub, method string, url string, data string) (string
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer resp.Body.Close()
 
 	// read the entire reply to ensure connection re-use
 	text, _ := ioutil.ReadAll(resp.Body)
+	io.Copy(ioutil.Discard, resp.Body)
+	resp.Body.Close()
 	return string(text), resp.Status
 }
 
@@ -140,7 +142,9 @@ func main() {
 	log.Printf("%s, %s\n\n", resp, status)
 	resp, status = PurgeCommandsForDeviceID(hub, "gopherTestDevice")
 	log.Printf("%s, %s\n\n", resp, status)
-	resp, status = SendMessage(hub, "gopherTestDevice", fmt.Sprintf(`{"deviceID":"%s", "count":2}`, "gopherTestDevice"))
+	for i := 0; i < 200; i++ {
+		resp, status = SendMessage(hub, "gopherTestDevice", fmt.Sprintf(`{"deviceID":"%s", "count":%d}`, "gopherTestDevice", i))
+	}
 	log.Printf("%s, %s\n\n", resp, status)
 	resp, status = DeleteDeviceID(hub, "gopherTestDevice")
 	log.Printf("%s, %s\n\n", resp, status)
