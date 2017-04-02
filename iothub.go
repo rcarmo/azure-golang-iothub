@@ -36,16 +36,22 @@ type IoTHub struct {
 }
 
 func NewIoTHub(conn string) (hub *IoTHub, err error) {
+    // hijack the ParseQuery function to split the connection string into a map
 	fields, err := url.ParseQuery(conn)
 	if err != nil {
 		log.Fatal(err)
 	}
 	hub = new(IoTHub)
+
+    // use reflection to match each connection string component with a struct field
+    // TODO: make sure we have all required fields
 	t := reflect.ValueOf(hub).Elem()
 	for k, v := range fields {
 		val := t.FieldByName(k)
 		val.Set(reflect.ValueOf(v[0]))
 	}
+
+    // set up a shared client for all connections, with long timeouts
 	hub.Client = &http.Client{
 		Transport: &http.Transport{
 			MaxIdleConnsPerHost: maxIdleConnections,
@@ -83,6 +89,7 @@ func performRequest(hub *IoTHub, method string, url string, body string) (string
 	}
 	defer resp.Body.Close()
 
+    // read the entire reply to ensure connection re-use
 	text, _ := ioutil.ReadAll(resp.Body)
 	return string(text), resp.Status
 }
