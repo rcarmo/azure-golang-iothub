@@ -23,6 +23,7 @@ const (
 	requestTimeout     int    = 10
 	tokenValidSecs     int    = 3600
 	apiVersion         string = "2016-11-14"
+	deviceName         string = "gopherTestDevice"
 )
 
 // IoTHub representation
@@ -91,7 +92,7 @@ func performRequest(hub *IoTHub, method string, url string, data string) (string
 	// read the entire reply to ensure connection re-use
 	text, _ := ioutil.ReadAll(resp.Body)
 	io.Copy(ioutil.Discard, resp.Body)
-	resp.Body.Close()
+	defer resp.Body.Close()
 	return string(text), resp.Status
 }
 
@@ -136,16 +137,16 @@ func main() {
 	hub, _ := NewIoTHub(connectionString)
 	resp, status := ListDeviceIDs(hub, 10)
 	log.Printf("%s, %s\n\n", resp, status)
-	resp, status = CreateDeviceID(hub, "gopherTestDevice")
+	resp, status = CreateDeviceID(hub, deviceName)
 	log.Printf("%s, %s\n\n", resp, status)
-	resp, status = GetDeviceID(hub, "gopherTestDevice")
+	resp, status = GetDeviceID(hub, deviceName)
 	log.Printf("%s, %s\n\n", resp, status)
-	resp, status = PurgeCommandsForDeviceID(hub, "gopherTestDevice")
+	resp, status = PurgeCommandsForDeviceID(hub, deviceName)
 	log.Printf("%s, %s\n\n", resp, status)
 	for i := 0; i < 200; i++ {
-		resp, status = SendMessage(hub, "gopherTestDevice", fmt.Sprintf(`{"deviceID":"%s", "count":%d}`, "gopherTestDevice", i))
+		resp, status = SendMessage(hub, deviceName, fmt.Sprintf(`{"deviceID":"%s", "count":%d}`, deviceName, i))
 	}
 	log.Printf("%s, %s\n\n", resp, status)
-	resp, status = DeleteDeviceID(hub, "gopherTestDevice")
+	resp, status = DeleteDeviceID(hub, deviceName)
 	log.Printf("%s, %s\n\n", resp, status)
 }
