@@ -23,7 +23,7 @@ const (
 	requestTimeout     int    = 10
 	tokenValidSecs     int    = 3600
 	apiVersion         string = "2016-11-14"
-	deviceName         string = "gopherTestDevice"
+	defaultDeviceName  string = "gopherTestDevice"
 )
 
 // IoTHub representation
@@ -129,10 +129,21 @@ func SendMessage(hub *IoTHub, deviceID string, message string) (string, string) 
 	return performRequest(hub, "POST", url, message)
 }
 
+func ReceiveMessage(hub *IoTHub, deviceID string) (string, string) {
+	url := fmt.Sprintf("%s/devices/%s/messages/deviceBound?api-version=%s", hub.HostName, deviceID, apiVersion)
+	return performRequest(hub, "GET", url, "")
+}
+
+
 func main() {
 	connectionString := os.Getenv("CONNECTION_STRING")
 	if connectionString == "" {
 		log.Fatal("No CONNECTION_STRING in environment")
+	}
+	deviceName := os.Getenv("DEVICE_NAME")
+	if deviceName == "" {
+		log.Printf("No DEVICE_NAME in environment, using default")
+		deviceName = defaultDeviceName
 	}
 	hub, _ := NewIoTHub(connectionString)
 	resp, status := ListDeviceIDs(hub, 10)
@@ -145,7 +156,9 @@ func main() {
 	log.Printf("%s, %s\n\n", resp, status)
 	for i := 0; i < 200; i++ {
 		resp, status = SendMessage(hub, deviceName, fmt.Sprintf(`{"deviceID":"%s", "count":%d}`, deviceName, i))
+		log.Printf("%s, %s\n\n", resp, status)
 	}
+	resp, status = ReceiveMessage(hub, deviceName)
 	log.Printf("%s, %s\n\n", resp, status)
 	resp, status = DeleteDeviceID(hub, deviceName)
 	log.Printf("%s, %s\n\n", resp, status)
