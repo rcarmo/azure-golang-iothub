@@ -14,6 +14,7 @@ import (
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 	"text/template"
 	"time"
 )
@@ -47,7 +48,8 @@ func NewIoTHub(conn string) (hub *IoTHub, err error) {
 	t := reflect.ValueOf(hub).Elem()
 	for k, v := range fields {
 		val := t.FieldByName(k)
-		val.Set(reflect.ValueOf(v[0]))
+		// Make sure to reinstate plus signs (which ParseQuery strips away)
+		val.Set(reflect.ValueOf(strings.Replace(v[0], " ", "+", -1)))
 	}
 
 	// set up a shared client for all connections, with long timeouts
@@ -80,6 +82,7 @@ func performRequest(hub *IoTHub, method string, url string, data string) (string
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", "golang-iot-client")
 	req.Header.Set("Authorization", token)
+	log.Println("Authorization:", token)
 	if method == "DELETE" {
 		req.Header.Set("If-Match", "*")
 	}
@@ -133,7 +136,6 @@ func ReceiveMessage(hub *IoTHub, deviceID string) (string, string) {
 	url := fmt.Sprintf("%s/devices/%s/messages/deviceBound?api-version=%s", hub.HostName, deviceID, apiVersion)
 	return performRequest(hub, "GET", url, "")
 }
-
 
 func main() {
 	connectionString := os.Getenv("CONNECTION_STRING")
