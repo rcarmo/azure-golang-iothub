@@ -24,7 +24,7 @@ const (
 	requestTimeout     int    = 10
 	tokenValidSecs     int    = 3600
 	apiVersion         string = "2016-11-14"
-	defaultDeviceName  string = "gopherTestDevice"
+	defaultDeviceId  string = "gopherTestDevice"
 )
 
 // IoTHub representation
@@ -32,6 +32,7 @@ type IoTHub struct {
 	HostName            string
 	SharedAccessKeyName string
 	SharedAccessKey     string
+	DeviceId            string
 	Client              *http.Client
 }
 
@@ -70,7 +71,10 @@ func buildSasToken(hub *IoTHub, uri string) string {
 	mac := hmac.New(sha256.New, []byte(binKey))
 	mac.Write([]byte(toSign))
 	encodedSignature := template.URLQueryEscaper(base64.StdEncoding.EncodeToString(mac.Sum(nil)))
-	return fmt.Sprintf("SharedAccessSignature sr=%s&sig=%s&se=%d&skn=%s", encodedUri, encodedSignature, timestamp, hub.SharedAccessKeyName)
+	if hub.SharedAccessKeyName != "" {
+		return fmt.Sprintf("SharedAccessSignature sr=%s&sig=%s&se=%d&skn=%s", encodedUri, encodedSignature, timestamp, hub.SharedAccessKeyName)
+	}
+	return fmt.Sprintf("SharedAccessSignature sr=%s&sig=%s&se=%d", encodedUri, encodedSignature, timestamp)
 }
 
 // Perform individual requests (re-using session)
@@ -99,8 +103,8 @@ func performRequest(hub *IoTHub, method string, url string, data string) (string
 	return string(text), resp.Status
 }
 
-// CreateDeviceID adds a given device to an IoTHub and
-// returns the HTTP request data
+// Service API
+
 func CreateDeviceID(hub *IoTHub, deviceID string) (string, string) {
 	url := fmt.Sprintf("%s/devices/%s?api-version=%s", hub.HostName, deviceID, apiVersion)
 	data := fmt.Sprintf(`{"deviceId":"%s"}`, deviceID)
@@ -127,13 +131,17 @@ func ListDeviceIDs(hub *IoTHub, top int) (string, string) {
 	return performRequest(hub, "GET", url, "")
 }
 
-func SendMessage(hub *IoTHub, deviceID string, message string) (string, string) {
-	url := fmt.Sprintf("%s/devices/%s/messages/events?api-version=%s", hub.HostName, deviceID, apiVersion)
+// TODO: SendMessageToDevice as soon as that endpoint is exposed via HTTP
+
+// Device API
+
+func SendMessage(hub *IoTHub, message string) (string, string) {
+	url := fmt.Sprintf("%s/devices/%s/messages/events?api-version=%s", hub.HostName, hub.DeviceId, apiVersion)
 	return performRequest(hub, "POST", url, message)
 }
 
-func ReceiveMessage(hub *IoTHub, deviceID string) (string, string) {
-	url := fmt.Sprintf("%s/devices/%s/messages/deviceBound?api-version=%s", hub.HostName, deviceID, apiVersion)
+func ReceiveMessage(hub *IoTHub) (string, string) {
+	url := fmt.Sprintf("%s/devices/%s/messages/deviceBound?api-version=%s", hub.HostName, hub.DeviceId, apiVersion)
 	return performRequest(hub, "GET", url, "")
 }
 
@@ -142,26 +150,26 @@ func main() {
 	if connectionString == "" {
 		log.Fatal("No CONNECTION_STRING in environment")
 	}
-	deviceName := os.Getenv("DEVICE_NAME")
-	if deviceName == "" {
-		log.Printf("No DEVICE_NAME in environment, using default")
-		deviceName = defaultDeviceName
-	}
 	hub, _ := NewIoTHub(connectionString)
-	resp, status := ListDeviceIDs(hub, 10)
-	log.Printf("%s, %s\n\n", resp, status)
-	resp, status = CreateDeviceID(hub, deviceName)
-	log.Printf("%s, %s\n\n", resp, status)
-	resp, status = GetDeviceID(hub, deviceName)
-	log.Printf("%s, %s\n\n", resp, status)
-	resp, status = PurgeCommandsForDeviceID(hub, deviceName)
-	log.Printf("%s, %s\n\n", resp, status)
-	for i := 0; i < 200; i++ {
-		resp, status = SendMessage(hub, deviceName, fmt.Sprintf(`{"deviceID":"%s", "count":%d}`, deviceName, i))
-		log.Printf("%s, %s\n\n", resp, status)
-	}
-	resp, status = ReceiveMessage(hub, deviceName)
-	log.Printf("%s, %s\n\n", resp, status)
-	resp, status = DeleteDeviceID(hub, deviceName)
-	log.Printf("%s, %s\n\n", resp, status)
+    if hub.DeviceId == "" {
+        log.Printf("No DeviceId in connection string, running provisioning test.")
+        resp, status := ListDeviceIDs(hub, 10)
+        log.Printf("%s, %s\n\n", resp, status)
+        resp, status = CreateDeviceID(hub, defaultDeviceId)
+        log.Printf("%s, %s\n\n", resp, status)
+        resp, status = GetDeviceID(hub, defaultDeviceId)
+        log.Printf("%s, %s\n\n", resp, status)
+        resp, status = PurgeCommandsForDeviceID(hub, defaultDeviceId)
+        log.Printf("%s, %s\n\n", resp, status)
+        //resp, status = DeleteDeviceID(hub, defaultDeviceId)
+        //log.Printf("%s, %s\n\n", resp, status)
+    } else {
+        log.Printf("DeviceID defined in connection string, running message test.")
+        resp, status := ReceiveMessage(hub)
+        log.Printf("%s, %s\n\n", resp, status)
+        for i := 0; i < 10; i++ {
+            resp, status = SendMessage(hub, fmt.Sprintf(`{"deviceID":"%s", "count":%d}`, hub.DeviceId, i))
+            log.Printf("%s, %s\n\n", resp, status)
+        }
+    }
 }
