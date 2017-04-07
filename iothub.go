@@ -24,7 +24,7 @@ const (
 	requestTimeout     int    = 10
 	tokenValidSecs     int    = 3600
 	apiVersion         string = "2016-11-14"
-	defaultDeviceId  string = "gopherTestDevice"
+	defaultDeviceId    string = "gopherTestDevice"
 )
 
 // IoTHub representation
@@ -151,25 +151,25 @@ func main() {
 		log.Fatal("No CONNECTION_STRING in environment")
 	}
 	hub, _ := NewIoTHub(connectionString)
-    if hub.DeviceId == "" {
-        log.Printf("No DeviceId in connection string, running provisioning test.")
-        resp, status := ListDeviceIDs(hub, 10)
-        log.Printf("%s, %s\n\n", resp, status)
-        resp, status = CreateDeviceID(hub, defaultDeviceId)
-        log.Printf("%s, %s\n\n", resp, status)
-        resp, status = GetDeviceID(hub, defaultDeviceId)
-        log.Printf("%s, %s\n\n", resp, status)
-        resp, status = PurgeCommandsForDeviceID(hub, defaultDeviceId)
-        log.Printf("%s, %s\n\n", resp, status)
-        //resp, status = DeleteDeviceID(hub, defaultDeviceId)
-        //log.Printf("%s, %s\n\n", resp, status)
-    } else {
-        log.Printf("DeviceID defined in connection string, running message test.")
-        resp, status := ReceiveMessage(hub)
-        log.Printf("%s, %s\n\n", resp, status)
-        for i := 0; i < 10; i++ {
-            resp, status = SendMessage(hub, fmt.Sprintf(`{"deviceID":"%s", "count":%d}`, hub.DeviceId, i))
-            log.Printf("%s, %s\n\n", resp, status)
-        }
-    }
+	if hub.DeviceId == "" {
+		log.Printf("No DeviceId in connection string, running provisioning test.")
+		resp, status := ListDeviceIDs(hub, 10)
+		log.Printf("%s, %s\n\n", resp, status)
+		resp, status = CreateDeviceID(hub, defaultDeviceId)
+		log.Printf("%s, %s\n\n", resp, status)
+		resp, status = GetDeviceID(hub, defaultDeviceId)
+		log.Printf("%s, %s\n\n", resp, status)
+		resp, status = PurgeCommandsForDeviceID(hub, defaultDeviceId)
+		log.Printf("%s, %s\n\n", resp, status)
+		//resp, status = DeleteDeviceID(hub, defaultDeviceId)
+		//log.Printf("%s, %s\n\n", resp, status)
+	} else {
+		log.Printf("DeviceID defined in connection string, running message test.")
+		resp, status := ReceiveMessage(hub)
+		log.Printf("%s, %s\n\n", resp, status)
+		for i := 0; i < 10; i++ {
+			resp, status = SendMessage(hub, fmt.Sprintf(`{"deviceID":"%s", "count":%d}`, hub.DeviceId, i))
+			log.Printf("%s, %s\n\n", resp, status)
+		}
+	}
 }
