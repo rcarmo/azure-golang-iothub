@@ -3,7 +3,7 @@ export GOARCH?=amd64
 export BINARY?=client
 
 run:
-	go run iothub.go
+	go run main.go iothubHttp.go
 
 build:
 	go build -o $(BINARY)
