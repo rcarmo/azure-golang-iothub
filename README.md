@@ -9,7 +9,8 @@ Experimental (minimalistic) Azure IoT Hub client in Go (HTTPS only)
 * [x] HTTP connection re-use
 * [x] Proper testing, built-in example reading connection string from environment variable
 + [x] Support both named and unnamed (`DeviceId`) connection strings
-* [ ] Refactor as library
+* [x] Refactor as library
+* [ ] Implement AMQP client
 
 ## HOWTO
 
