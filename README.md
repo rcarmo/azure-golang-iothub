@@ -1,6 +1,7 @@
 # azure-golang-iot-hub
 
-Experimental (minimalistic) Azure IoT Hub client in Go (HTTPS only)
+Experimental (minimalistic) Azure IoT Hub client in Go (HTTPS only).
+This has been tested using Go version 1.8.5 on a linux/amd64 architecture.
 
 ## TODO
 
@@ -25,4 +26,3 @@ or...
 export CONNECTION_STRING='HostName=myhub.azure-devices.net;DeviceId=testdevice;SharedAccessKey=SxiN78h8tdN3yQXMBhmV193ZxKWBHhmJptGcvheA3dg='
 make run
 ```
-
