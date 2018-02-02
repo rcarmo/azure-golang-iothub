@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+
+	"github.com/tappoz/azure-golang-iothub/iothub"
 )
 
 func main() {
@@ -12,7 +14,7 @@ func main() {
 		log.Fatal("No CONNECTION_STRING in environment")
 	}
 
-	client, err := NewIotHubHTTPClientFromConnectionString(connectionString)
+	client, err := iothub.NewIotHubHTTPClientFromConnectionString(connectionString)
 	if err != nil {
 		log.Fatalln("Error creating http client from connection string", err)
 	}
