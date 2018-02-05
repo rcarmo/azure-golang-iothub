@@ -51,6 +51,7 @@ func TestCreateNewDeviceThenRetrieveItThenDeleteIt(t *testing.T) {
 	if !strings.Contains(respPut, fmt.Sprintf("\"deviceId\":\"%s\"", defaultDeviceID)) {
 		t.Errorf("The retrieved device is not the expected one with device ID '%s': %s", defaultDeviceID, respPut)
 	}
+	// fmt.Printf(">>> %v\n", respPut)
 
 	// retrieve device details
 	respGet, statusGet := client.GetDeviceID(defaultDeviceID)
@@ -60,6 +61,7 @@ func TestCreateNewDeviceThenRetrieveItThenDeleteIt(t *testing.T) {
 	if !strings.Contains(respGet, fmt.Sprintf("\"deviceId\":\"%s\"", defaultDeviceID)) {
 		t.Errorf("The retrieved device is not the expected one with device ID '%s': %s", defaultDeviceID, respGet)
 	}
+	// fmt.Printf(">>> %v\n", respGet)
 
 	// delete device details
 	respDel, statusDel := client.DeleteDeviceID(defaultDeviceID)
