@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// Device is the struct representing the JSON received from the REST API
 // Spec: https://docs.microsoft.com/en-us/rest/api/iothub/deviceapi/getdevice#device
 type Device struct {
 	DeviceId                   string                  `json:"deviceId"`
@@ -25,6 +26,8 @@ type Device struct {
 var connectionStates = []string{"disconnected", "connected"}
 var stata = []string{"disabled", "enabled"}
 
+// Unmarshal allows to populate the fields of the Device struct taking those
+// values from the received JSON payload of the HTTP response
 func (d *Device) Unmarshal(deviceJSON string) error {
 	err := json.Unmarshal([]byte(deviceJSON), &d)
 	if err != nil {
@@ -55,18 +58,21 @@ func (d *Device) Unmarshal(deviceJSON string) error {
 	return nil
 }
 
+// AuthenticationMechanism is the struct representing some of the nested fields of the JSON received from the REST API
 // Spec: https://docs.microsoft.com/en-us/rest/api/iothub/deviceapi/getdevice#authenticationmechanism
 type AuthenticationMechanism struct {
 	SymmetricKey   SymmetricKey   `json:"symmetricKey"`
 	X509Thumbprint X509Thumbprint `json:"x509Thumbprint"`
 }
 
+// SymmetricKey is the struct representing some of the nested fields of the JSON received from the REST API
 // Spec: https://docs.microsoft.com/en-us/rest/api/iothub/deviceapi/getdevice#symmetrickey
 type SymmetricKey struct {
 	PrimaryKey   string `json:"primaryKey"`
 	SecondaryKey string `json:"secondaryKey"`
 }
 
+// X509Thumbprint is the struct representing some of the nested fields of the JSON received from the REST API
 // Spec: https://docs.microsoft.com/en-us/rest/api/iothub/deviceapi/getdevice#X509Thumbprint
 type X509Thumbprint struct {
 	PrimaryThumbprint   string `json:"primaryThumbprint"`
