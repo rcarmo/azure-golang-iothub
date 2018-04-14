@@ -1,4 +1,5 @@
-package main
+// Package iothub allows to connect to the Azure IotHub REST API
+package iothub
 
 import (
 	"bytes"
@@ -24,10 +25,10 @@ const (
 	apiVersion         string = "2016-11-14"
 )
 
-type sharedAccessKey = string
-type sharedAccessKeyName = string
-type hostName = string
-type deviceID = string
+type sharedAccessKey string
+type sharedAccessKeyName string
+type hostName string
+type deviceID string
 
 // IotHubHTTPClient is a simple client to connect to Azure IoT Hub
 type IotHubHTTPClient struct {
@@ -60,13 +61,13 @@ func tryGetKeyByName(v url.Values, key string) string {
 	return strings.Replace(v[key][0], " ", "+", -1)
 }
 
-// NewIotHubHTTPClient is a constructor of IutHubClient
-func NewIotHubHTTPClient(hostName string, sharedAccessKeyName string, sharedAccessKey string, deviceID string) *IotHubHTTPClient {
+// NewIotHubHTTPClient is a constructor for a IutHubClient instance
+func NewIotHubHTTPClient(hostNameStr string, sharedAccessKeyNameStr string, sharedAccessKeyStr string, deviceIDStr string) *IotHubHTTPClient {
 	return &IotHubHTTPClient{
-		sharedAccessKeyName: sharedAccessKeyName,
-		sharedAccessKey:     sharedAccessKey,
-		hostName:            hostName,
-		deviceID:            deviceID,
+		sharedAccessKeyName: sharedAccessKeyName(sharedAccessKeyNameStr),
+		sharedAccessKey:     sharedAccessKey(sharedAccessKeyStr),
+		hostName:            hostName(hostNameStr),
+		deviceID:            deviceID(deviceIDStr),
 		client: &http.Client{
 			Transport: &http.Transport{
 				MaxIdleConnsPerHost: maxIdleConnections,
@@ -76,20 +77,32 @@ func NewIotHubHTTPClient(hostName string, sharedAccessKeyName string, sharedAcce
 	}
 }
 
-// NewIotHubHTTPClientFromConnectionString creates new client from connection string
+// NewIotHubHTTPClientFromConnectionString creates a new client from connection string
 func NewIotHubHTTPClientFromConnectionString(connectionString string) (*IotHubHTTPClient, error) {
 	h, k, kn, d, err := parseConnectionString(connectionString)
 	if err != nil {
 		return nil, err
 	}
 
-	return NewIotHubHTTPClient(h, kn, k, d), nil
+	return NewIotHubHTTPClient(string(h), string(kn), string(k), string(d)), nil
 }
 
 // IsDevice tell either device id was specified when client created.
 // If device id was specified in connection string this will enabled device scoped requests.
 func (c *IotHubHTTPClient) IsDevice() bool {
 	return c.deviceID != ""
+}
+
+// Logger
+
+// Logger could be replaced with another logger instance e.g. one that
+// is printing to os.Stdout instead of ioutil.Discard
+var Logger StdLogger = log.New(ioutil.Discard, "[Iot Hub] ", log.LstdFlags)
+
+type StdLogger interface {
+	Fatal(v ...interface{})
+	Printf(format string, v ...interface{})
+	Println(v ...interface{})
 }
 
 // Service API
@@ -147,7 +160,7 @@ func (c *IotHubHTTPClient) buildSasToken(uri string) string {
 
 	toSign := encodedURI + "\n" + strconv.FormatInt(timestamp, 10)
 
-	binKey, _ := base64.StdEncoding.DecodeString(c.sharedAccessKey)
+	binKey, _ := base64.StdEncoding.DecodeString(string(c.sharedAccessKey))
 	mac := hmac.New(sha256.New, []byte(binKey))
 	mac.Write([]byte(toSign))
 
@@ -162,15 +175,15 @@ func (c *IotHubHTTPClient) buildSasToken(uri string) string {
 
 func (c *IotHubHTTPClient) performRequest(method string, uri string, data string) (string, string) {
 	token := c.buildSasToken(uri)
-	log.Printf("%s https://%s\n", method, uri)
+	Logger.Printf("%s https://%s\n", method, uri)
 	req, _ := http.NewRequest(method, "https://"+uri, bytes.NewBufferString(data))
-	log.Println(data)
+	Logger.Println(data)
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", "golang-iot-client")
 	req.Header.Set("Authorization", token)
 
-	log.Println("Authorization:", token)
+	Logger.Println("Authorization:", token)
 
 	if method == "DELETE" {
 		req.Header.Set("If-Match", "*")
@@ -178,7 +191,7 @@ func (c *IotHubHTTPClient) performRequest(method string, uri string, data string
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		Logger.Fatal(err)
 	}
 
 	// read the entire reply to ensure connection re-use
